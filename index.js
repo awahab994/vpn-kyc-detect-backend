@@ -25,6 +25,12 @@ app.get("/", async (req, res) => {
     res.send(token);
 });
 
+app.get("/", async (req, res) => {
+    // const token = await getToken();
+    // res.send(token);
+    res.send("Hey this is my API running 🥳");
+});
+
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
     const token = req.cookies.token;
