@@ -8,7 +8,7 @@ const pgp = require("pg-promise")();
 const axios = require("axios");
 const cookieParser = require("cookie-parser");
 
-const { ComplyCube } = require("@complycube/api");
+// const { ComplyCube } = require('@complycube/api');
 
 dotenv.config();
 
@@ -20,10 +20,10 @@ app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-app.get("/", async (req, res) => {
-    const token = await getToken();
-    res.send(token);
-});
+// app.get('/', async (req, res) => {
+//   const token = await getToken();
+//   res.send(token);
+// });
 
 app.get("/", async (req, res) => {
     // const token = await getToken();
@@ -32,8 +32,9 @@ app.get("/", async (req, res) => {
 });
 
 // Middleware to verify JWT token
+// eslint-disable-next-line consistent-return
 const authenticateToken = async (req, res, next) => {
-    const token = req.cookies.token;
+    const { token } = req.cookies;
 
     if (!token) {
         return res.status(401).json({ error: "Unauthorized" });
@@ -118,9 +119,10 @@ app.get("/user", authenticateToken, (req, res) => {
     res.json(req.user);
 });
 
-const complycube = new ComplyCube({
-    apiKey: "test_WUNudXA4MjI0NG10Qk5BalI6MTIxODgzNTFmODZhZjc0YzdhMjBkZDJhYzg4ZTBjYzgzM2FjMTJmNDlmOWQxMDdkODE2NTlhMWM3NzBjMGFmMg==",
-});
+// const complycube = new ComplyCube({
+//   apiKey: 'test_WUNudXA4MjI0NG10Qk5BalI6MTIxODgzNTFmODZhZjc0YzdhMjBkZDJhYzg4ZTBjYzgzM2FjMTJmN
+// DlmOWQxMDdkODE2NTlhMWM3NzBjMGFmMg==',
+// });
 
 app.get("/ipaddress", async (req, res) => {
     try {
@@ -138,23 +140,23 @@ app.get("/ipaddress", async (req, res) => {
     }
 });
 
-const getToken = async () => {
-    const client = await complycube.client.create({
-        type: "person",
-        email: "john.doe@example.com",
-        personDetails: {
-            firstName: "John",
-            lastName: "Doe",
-            dob: "1990-01-01",
-        },
-    });
+// const getToken = async () => {
+//   const client = await complycube.client.create({
+//     type: 'person',
+//     email: 'john.doe@example.com',
+//     personDetails: {
+//       firstName: 'John',
+//       lastName: 'Doe',
+//       dob: '1990-01-01',
+//     },
+//   });
 
-    const token = await complycube.token.generate(client.id, {
-        referrer: "*://*/*",
-    });
+//   const token = await complycube.token.generate(client.id, {
+//     referrer: '*://*/*',
+//   });
 
-    return token;
-};
+//   return token;
+// };
 
 app.listen(port, () => {
     console.log(`Server is Fire at http://localhost:${port}`);
