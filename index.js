@@ -8,7 +8,7 @@ const pgp = require("pg-promise")();
 const axios = require("axios");
 const cookieParser = require("cookie-parser");
 
-// const { ComplyCube } = require('@complycube/api');
+const { ComplyCube } = require("@complycube/api");
 
 dotenv.config();
 
@@ -19,11 +19,6 @@ const port = process.env.PORT || 8000;
 app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-
-// app.get('/', async (req, res) => {
-//   const token = await getToken();
-//   res.send(token);
-// });
 
 app.get("/", async (req, res) => {
     // const token = await getToken();
@@ -42,7 +37,12 @@ const authenticateToken = async (req, res, next) => {
 
     try {
         const decodedToken = jwt.verify(token, "your_secret_key"); // replace with your actual secret key
-        req.user = decodedToken;
+
+        const user = await db.one("SELECT email,first_name,last_name  FROM users WHERE email = $1", [
+            decodedToken.email,
+        ]);
+
+        req.user = user;
         next();
     } catch (error) {
         console.error("Error verifying JWT:", error);
@@ -64,7 +64,7 @@ app.post("/register", async (req, res) => {
             hashedPassword,
         ]);
 
-        const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "1h" });
+        const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "5h" });
 
         // Set the token in an HTTP-only cookie
         res.cookie("token", token, { httpOnly: true });
@@ -83,7 +83,7 @@ app.post("/login", async (req, res) => {
         const user = await db.one("SELECT * FROM users WHERE email = $1", [email]);
 
         if (await bcrypt.compare(password, user.password)) {
-            const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "1h" });
+            const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "5h" });
             res.cookie("token", token, { httpOnly: true });
             res.status(200).json({ message: "Login successful" });
         } else {
@@ -100,7 +100,7 @@ app.get("/user-profile", authenticateToken, async (req, res) => {
     const userEmail = req.user.email;
 
     try {
-        const user = await db.one("SELECT * FROM users WHERE email = $1", [userEmail]);
+        const user = await db.one("SELECT email,first_name,last_name FROM users WHERE email = $1", [userEmail]);
         res.json(user);
     } catch (error) {
         console.error("Error fetching user data:", error);
@@ -119,10 +119,9 @@ app.get("/user", authenticateToken, (req, res) => {
     res.json(req.user);
 });
 
-// const complycube = new ComplyCube({
-//   apiKey: 'test_WUNudXA4MjI0NG10Qk5BalI6MTIxODgzNTFmODZhZjc0YzdhMjBkZDJhYzg4ZTBjYzgzM2FjMTJmN
-// DlmOWQxMDdkODE2NTlhMWM3NzBjMGFmMg==',
-// });
+const complycube = new ComplyCube({
+    apiKey: process.env.COMPLY_CUBE_API_KEY,
+});
 
 app.get("/ipaddress", async (req, res) => {
     try {
@@ -140,23 +139,23 @@ app.get("/ipaddress", async (req, res) => {
     }
 });
 
-// const getToken = async () => {
-//   const client = await complycube.client.create({
-//     type: 'person',
-//     email: 'john.doe@example.com',
-//     personDetails: {
-//       firstName: 'John',
-//       lastName: 'Doe',
-//       dob: '1990-01-01',
-//     },
-//   });
+app.get("/kyc-token", authenticateToken, async (req, res) => {
+    const client = await complycube.client.create({
+        type: "person",
+        email: req.user.email,
+        personDetails: {
+            firstName: req.user.first_name,
+            lastName: req.user.last_name,
+            //   dob: '1990-01-01',
+        },
+    });
 
-//   const token = await complycube.token.generate(client.id, {
-//     referrer: '*://*/*',
-//   });
+    const token = await complycube.token.generate(client.id, {
+        referrer: "*://*/*",
+    });
 
-//   return token;
-// };
+    res.send({ kycToken: token });
+});
 
 app.listen(port, () => {
     console.log(`Server is Fire at http://localhost:${port}`);
