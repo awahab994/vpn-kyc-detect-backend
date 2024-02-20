@@ -8,11 +8,18 @@ const pgp = require("pg-promise")();
 const axios = require("axios");
 const cookieParser = require("cookie-parser");
 
-const { ComplyCube } = require("@complycube/api");
+const { ComplyCube, EventVerifier } = require("@complycube/api");
 
 dotenv.config();
 
 const db = pgp(process.env.DATABASE_URL);
+// Provide your webhook secret to the EventVerifier
+const webhookSecret = process.env.COMPLYCUBE_WEBHOOK_SECRET;
+const eventVerifier = new EventVerifier(webhookSecret);
+
+const complycube = new ComplyCube({
+    apiKey: process.env.COMPLY_CUBE_API_KEY,
+});
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -119,8 +126,45 @@ app.get("/user", authenticateToken, (req, res) => {
     res.json(req.user);
 });
 
-const complycube = new ComplyCube({
-    apiKey: process.env.COMPLY_CUBE_API_KEY,
+// Match the raw body to content type application/json
+app.post("/webhook", bodyParser.json(), (request, response) => {
+    const signature = request.headers["complycube-signature"];
+
+    let event;
+
+    try {
+        event = eventVerifier.constructEvent(JSON.stringify(request.body), signature);
+    } catch (err) {
+        response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    switch (event.type) {
+        case "check.completed": {
+            const checkId = event.payload.id;
+            const checkOutCome = event.payload.outcome;
+            console.log(`Check ${checkId} completed with outcome ${checkOutCome}`);
+            break;
+        }
+        case "check.pending": {
+            const checkId = event.payload.id;
+            console.log(`Check ${checkId} is pending`);
+            break;
+        }
+        case "check.completed.match_confirmed": {
+            const checkId = event.payload.id;
+            console.log(`Check ${checkId} is confirmed`);
+        }
+
+        // ... handle other event types
+        default: {
+            // Unexpected event type
+            return response.status(400).end();
+        }
+    }
+
+    // Return a response to acknowledge receipt of the event
+    response.json({ received: true });
 });
 
 app.get("/ipaddress", async (req, res) => {
@@ -149,6 +193,9 @@ app.get("/kyc-token", authenticateToken, async (req, res) => {
             //   dob: '1990-01-01',
         },
     });
+
+    //TODO: Save into DB  with user
+    console.log(client.id);
 
     const token = await complycube.token.generate(client.id, {
         referrer: "*://*/*",
