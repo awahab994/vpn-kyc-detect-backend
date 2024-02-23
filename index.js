@@ -23,14 +23,14 @@ const complycube = new ComplyCube({
 
 const app = express();
 const port = process.env.PORT || 8000;
-app.use(cors());
+app.use(cors({ credentials: true, origin: "*" }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
 app.get("/", async (req, res) => {
   // const token = await getToken();
   // res.send(token);
-  res.send("Hey this is my API running! 🥳");
+  res.send("Hey this is my API running!! 🥳");
 });
 
 // Middleware to verify JWT token
