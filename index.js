@@ -23,7 +23,7 @@ const complycube = new ComplyCube({
 
 const app = express();
 const port = process.env.PORT || 8000;
-app.use(cors());
+app.use(cors({ credentials: true, origin: process.env.REACT_APP_URL }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
@@ -73,7 +73,7 @@ app.post("/register", async (req, res) => {
     const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "5h" });
 
     // Set the token in an HTTP-only cookie
-    res.cookie("token", token, { httpOnly: true });
+    res.cookie("token", token);
     res.status(201).json({ message: "Signup successful" });
   } catch (error) {
     console.error("Error during signup:", error);
