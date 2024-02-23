@@ -23,7 +23,7 @@ const complycube = new ComplyCube({
 
 const app = express();
 const port = process.env.PORT || 8000;
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(cors({ credentials: true, origin: "*" }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
