@@ -36,7 +36,7 @@ app.get("/", async (req, res) => {
 // Middleware to verify JWT token
 // eslint-disable-next-line consistent-return
 const authenticateToken = async (req, res, next) => {
-  const { token } = req.cookies;
+  const { token } = req.query;
 
   if (!token) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -73,8 +73,8 @@ app.post("/register", async (req, res) => {
     const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "5h" });
 
     // Set the token in an HTTP-only cookie
-    res.cookie("token", token);
-    res.status(201).json({ message: "Signup successful" });
+    //res.cookie("token", token);
+    res.status(201).json({ message: "Signup successful", token: token });
   } catch (error) {
     console.error("Error during signup:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -90,8 +90,8 @@ app.post("/login", async (req, res) => {
 
     if (await bcrypt.compare(password, user.password)) {
       const token = jwt.sign({ email }, "your_secret_key", { expiresIn: "5h" });
-      res.cookie("token", token, { httpOnly: true });
-      res.status(200).json({ message: "Login successful" });
+      //res.cookie("token", token, { httpOnly: true });
+      res.status(200).json({ message: "Login successful", token: token });
     } else {
       res.status(401).json({ error: "Authentication failed" });
     }
