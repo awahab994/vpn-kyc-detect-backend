@@ -259,6 +259,33 @@ app.get("/kyc-token", authenticateToken, async (req, res) => {
   }
 });
 
+app.get("/verification_status", authenticateToken, async (req, res) => {
+  try {
+    let status_response = [];
+    try {
+      const statuses = await db.many(
+        "SELECT id,check_id,is_document_check,is_standard_screening_check,status FROM checks WHERE user_id = $1;",
+        [req?.user?.id]
+      );
+      statuses.forEach((check) => {
+        status_response.push({
+          check_id: check.check_id,
+          document_type: check.is_document_check
+            ? "Document Check"
+            : "Standard Screening",
+          status: check.status,
+        });
+      });
+    } catch (error) {
+      console.log(`error while getting statuses data: ${error}`);
+    }
+
+    res.send({ data: status_response });
+  } catch (error) {
+    console.log("🚀 ~ app.get ~ error:", error);
+  }
+});
+
 app.post("/capture_document", authenticateToken, async (req, res) => {
   try {
     const standard_screening_check = await complycube.check.create(
@@ -267,6 +294,7 @@ app.post("/capture_document", authenticateToken, async (req, res) => {
         type: "standard_screening_check",
       }
     );
+    await db.none("DELETE FROM checks WHERE user_id = $1;", [req?.user?.id]);
     await db.none(
       "INSERT INTO checks(client_id, document_id, user_id, check_id, document_type, is_standard_screening_check, status) VALUES($1, $2, $3, $4, $5, $6, $7)",
       [
