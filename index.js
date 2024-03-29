@@ -199,12 +199,12 @@ app.post("/webhook", bodyParser.json(), async (request, response) => {
       // ... handle other event types
       default: {
         // Unexpected event type
-        return response.status(400).end();
+        return response.status(200).end();
       }
     }
 
     // Return a response to acknowledge receipt of the event
-    response.json({ received: true });
+    response.status(200).json({ received: true });
   } catch (error) {
     console.log("🚀 ~ app.post ~ error:", error);
     return response.status(400).end();
